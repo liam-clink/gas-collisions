@@ -4,6 +4,7 @@ number = 2
 positions = np.zeros(number)
 velocities = np.zeros_like(positions)
 mass = 1.
+piston_mass = 1.e6
 masses = mass*np.ones_like(positions)
 
 duration = 100.
@@ -18,6 +19,7 @@ uniform = np.random.default_rng().uniform(low=0.,high=1.,size=(number,))
 velocities[uniform <= 0.5] = -0.5
 velocities[uniform > 0.5] = 0.5
 positions = np.random.default_rng().uniform(low=bounds[0],high=bounds[1],size=(number,))
+piston_velocity = 0.
 
 # Start with two hard walls in 1D
 f = open("./positions.tsv",'w')
@@ -45,10 +47,11 @@ for i in range(len(times)):
             index = past_piston_tuples[j][0]
             extra_distance = positions[index]-bounds[1]
             positions[index] = bounds[1]-extra_distance
-            velocities[index] *= -1.
-
-    # TODO: allow piston motion
-
+            velocity_change = 2*(-velocities[index] + piston_velocity)
+            velocities[index] += velocity_change
+            piston_velocity -= mass/piston_mass*(velocity_change)
+    
+    bounds[1] += dt*piston_velocity
 
     # Save state
     line = ''
