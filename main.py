@@ -4,13 +4,12 @@ number = 100
 positions = np.zeros(number)
 velocities = np.zeros_like(positions)
 mass = 1.
-piston_mass = 1.e6
 masses = mass*np.ones_like(positions)
+piston_mass = 1.e6
 
-duration = 100.
-steps = 1000
-times = np.linspace(0.,duration,steps)
-dt = times[1]-times[0]
+duration = 500.
+dt = 0.05
+times = np.arange(0.,duration,dt)
 
 bounds = np.array([0.,1.])
 
@@ -21,9 +20,19 @@ velocities[uniform > 0.5] = 0.5
 positions = np.random.default_rng().uniform(low=bounds[0],high=bounds[1],size=(number,))
 piston_velocity = 0.
 
+def kinetic_energy(masses,velocities):
+    for i in range(len(velocities)):
+        kinetic_energy = 0.
+        kinetic_energy += 0.5*masses[i]*velocities[i]**2
+    print(kinetic_energy)
+    return kinetic_energy
+piston_force = -2*kinetic_energy(masses,velocities)/(bounds[1]-bounds[0])
+piston_acceleration = piston_force/piston_mass
+
 # Start with two hard walls in 1D
 f = open("./positions.tsv",'w')
-f.write('Time\t'+str(number)+' Positions\n')
+f.write(str(number)+'\nTime\t'+'Kinetic Energy\t'+'Average Velocity\t'+ \
+        'Stdev Velocity\t'+'Piston Position\t'+'Particle Positions\n')
 for i in range(len(times)):
     positions += dt*velocities
 
@@ -51,11 +60,17 @@ for i in range(len(times)):
             velocities[index] += velocity_change
             piston_velocity -= mass/piston_mass*(velocity_change)
     
+    piston_velocity += piston_acceleration*dt
     bounds[1] += dt*piston_velocity
 
     # Save state
     line = ''
     line += str(times[i]) + '\t'
+    line += str(kinetic_energy(masses,velocities)) + '\t'
+    average_velocity = np.average(velocities)
+    line += str(average_velocity) + '\t'
+    stdev_velocity = np.sqrt(np.average(velocities**2)-average_velocity**2)
+    line += str(stdev_velocity)+'\t'
     line += str(bounds[1])+'\t'
     for i in range(len(positions)):
         line += str(positions[i]) + '\t'
